@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,9 +25,10 @@ import { CitationTracker } from "@/components/citation-tracker"
 import { PlagiarismDetector } from "@/components/plagiarism-detector"
 import { ConferenceSuggestions } from "@/components/conference-suggestions"
 import { AnalyticsDashboard } from "@/components/analytics-dashboard"
+import { apiService, DocumentResults } from "@/lib/api"
 
 export default function DocumentSummarizer() {
-  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([])
+  const [uploadedDocuments, setUploadedDocuments] = useState<DocumentResults[]>([])
   const [activeTab, setActiveTab] = useState("upload")
   const [isProcessing, setIsProcessing] = useState(false)
   const [analyticsData, setAnalyticsData] = useState({
@@ -41,70 +42,59 @@ export default function DocumentSummarizer() {
     conferencesMatched: 0,
   })
 
-  const handleDocumentUpload = (files: File[]) => {
+  const handleDocumentUpload = async (files: File[]) => {
     setIsProcessing(true)
 
-    // Simulate processing delay
-    setTimeout(() => {
-      const newDocs = files.map((file, index) => ({
-        id: Date.now() + index,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        uploadedAt: new Date(),
-        status: "processed",
-        summary: generateMockSummary(file.name),
-        citations: generateMockCitations(),
-        plagiarismScore: Math.floor(Math.random() * 15) + 5,
-        conferences: generateMockConferences(file.name),
-        processingTime: Math.floor(Math.random() * 30) + 10,
-        accuracy: Math.floor(Math.random() * 10) + 90,
-      }))
+    try {
+      const newDocs: DocumentResults[] = []
+
+      for (const file of files) {
+        // Upload document
+        const uploadResult = await apiService.uploadDocument(file)
+        const document = uploadResult.document
+
+        // Generate summary
+        const summaryResult = await apiService.generateSummary(document.id, 200)
+        
+        // Analyze document
+        const analysisResult = await apiService.analyzeDocument(document.id)
+        
+        // Get full results
+        const results = await apiService.getDocumentResults(document.id)
+        
+        newDocs.push(results.document)
+      }
 
       setUploadedDocuments((prev) => [...prev, ...newDocs])
 
-      setAnalyticsData((prev) => ({
-        ...prev,
-        totalDocuments: prev.totalDocuments + files.length,
-        documentsToday: prev.documentsToday + files.length,
-        totalProcessingTime: prev.totalProcessingTime + newDocs.reduce((sum, doc) => sum + doc.processingTime, 0),
-        citationsFound: prev.citationsFound + newDocs.length * 3,
-        conferencesMatched: prev.conferencesMatched + newDocs.length * 2,
-        averageAccuracy: Math.floor(
-          (prev.averageAccuracy + newDocs.reduce((sum, doc) => sum + doc.accuracy, 0) / newDocs.length) / 2,
-        ),
-      }))
+      // Update analytics
+      const analytics = await apiService.getAnalytics()
+      setAnalyticsData(analytics)
 
       setIsProcessing(false)
       setActiveTab("results")
-    }, 3000)
+    } catch (error) {
+      console.error('Error processing documents:', error)
+      setIsProcessing(false)
+      // You could add error handling UI here
+    }
   }
 
-  const generateMockSummary = (filename: string) => {
-    const summaries = [
-      "This research paper presents a comprehensive analysis of machine learning applications in healthcare, focusing on diagnostic accuracy improvements and patient outcome predictions. The study demonstrates significant advances in early disease detection through AI-powered imaging analysis.",
-      "The legal document outlines contractual obligations between parties, emphasizing liability limitations, intellectual property rights, and dispute resolution mechanisms. Key provisions include termination clauses and confidentiality agreements.",
-      "This academic paper explores the intersection of artificial intelligence and educational technology, presenting evidence for improved learning outcomes through personalized AI tutoring systems and adaptive learning platforms.",
-    ]
-    return summaries[Math.floor(Math.random() * summaries.length)]
-  }
+  // Mock data generation functions removed - now using real API data
 
-  const generateMockCitations = () => [
-    {
-      id: 1,
-      text: "According to recent studies in medical imaging...",
-      source: "Page 3, Paragraph 2",
-      confidence: 0.95,
-    },
-    { id: 2, text: "The contractual framework establishes...", source: "Section 4.2, Line 15", confidence: 0.88 },
-    { id: 3, text: "Educational outcomes improved by 23%...", source: "Table 2, Results Section", confidence: 0.92 },
-  ]
-
-  const generateMockConferences = (filename: string) => [
-    { name: "International Conference on AI in Healthcare", relevance: 0.94, deadline: "2024-03-15" },
-    { name: "Legal Technology Summit", relevance: 0.87, deadline: "2024-04-20" },
-    { name: "Educational AI Symposium", relevance: 0.91, deadline: "2024-05-10" },
-  ]
+  // Load analytics data on component mount
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        const analytics = await apiService.getAnalytics()
+        setAnalyticsData(analytics)
+      } catch (error) {
+        console.error('Error loading analytics:', error)
+      }
+    }
+    
+    loadAnalytics()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-muted">
