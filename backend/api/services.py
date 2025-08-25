@@ -225,20 +225,81 @@ class GeminiService:
                 # Look for any text that might be a citation
                 words = text.split()
                 if len(words) > 50:  # Only for substantial documents
-                    citations = [
-                        {
-                            "text": "Academic content detected - review for citations",
-                            "source": "Document analysis",
-                            "confidence": 0.7
-                        },
-                        {
-                            "text": "Research paper format identified",
-                            "source": "Document structure analysis",
-                            "confidence": 0.75
-                        }
-                    ]
+                    # Extract meaningful sentences that might contain citations
+                    sentences = text.split('.')
+                    meaningful_sentences = []
+                    
+                    for sentence in sentences:
+                        sentence = sentence.strip()
+                        if len(sentence) > 20 and len(sentence) < 200:  # Reasonable sentence length
+                            # Look for sentences that might contain academic content
+                            if any(keyword in sentence.lower() for keyword in [
+                                'research', 'study', 'analysis', 'data', 'results', 'conclusion',
+                                'method', 'approach', 'framework', 'model', 'algorithm',
+                                'evaluation', 'assessment', 'comparison', 'review', 'survey'
+                            ]):
+                                meaningful_sentences.append(sentence)
+                    
+                    # Take the first few meaningful sentences
+                    for i, sentence in enumerate(meaningful_sentences[:3]):
+                        if sentence:
+                            citations.append({
+                                "text": sentence,
+                                "source": f"Academic content analysis - Key finding {i+1}",
+                                "confidence": 0.75
+                            })
+                    
+                    # If still no meaningful sentences, extract key phrases
+                    if not citations:
+                        # Look for key phrases that might indicate academic content
+                        key_phrases = []
+                        lines = text.split('\n')
+                        for line in lines:
+                            line = line.strip()
+                            if len(line) > 15 and len(line) < 100:
+                                # Look for lines that might be headings or key points
+                                if line[0].isupper() and not line.endswith('.') and ':' in line:
+                                    key_phrases.append(line)
+                        
+                        for i, phrase in enumerate(key_phrases[:3]):
+                            if phrase:
+                                citations.append({
+                                    "text": phrase,
+                                    "source": f"Document structure analysis - Key section {i+1}",
+                                    "confidence": 0.7
+                                })
+                    
+                    # Final fallback - extract first few substantial sentences
+                    if not citations:
+                        first_sentences = []
+                        for sentence in sentences[:5]:
+                            sentence = sentence.strip()
+                            if len(sentence) > 30:  # Substantial sentences
+                                first_sentences.append(sentence)
+                        
+                        for i, sentence in enumerate(first_sentences[:2]):
+                            if sentence:
+                                citations.append({
+                                    "text": sentence[:150] + "..." if len(sentence) > 150 else sentence,
+                                    "source": f"Document content analysis - Main point {i+1}",
+                                    "confidence": 0.65
+                                })
                 else:
-                    citations = [{"text": "Citation detected", "source": "Unknown", "confidence": 0.8}]
+                    # For short documents, extract the main content
+                    if len(text) > 100:
+                        # Take a meaningful portion of the text
+                        meaningful_text = text[:200] + "..." if len(text) > 200 else text
+                        citations.append({
+                            "text": meaningful_text,
+                            "source": "Document content analysis",
+                            "confidence": 0.7
+                        })
+                    else:
+                        citations.append({
+                            "text": text,
+                            "source": "Document content",
+                            "confidence": 0.8
+                        })
             
             return citations
         
@@ -263,6 +324,20 @@ class GeminiService:
             - Bibliography entries
             - Footnotes
             - URLs and web references
+            - Academic journal names
+            - Conference proceedings
+            - Book titles and authors
+            - Research paper references
+            
+            If no formal citations are found, extract:
+            - Key research findings or conclusions
+            - Important data points or statistics
+            - Methodological approaches mentioned
+            - Key concepts or frameworks discussed
+            - Significant results or outcomes
+            
+            Focus on extracting meaningful, specific content rather than generic statements.
+            Each citation should contain actual information from the document.
             """
             
             response = self.model.generate_content(prompt)

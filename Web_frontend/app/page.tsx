@@ -42,6 +42,17 @@ export default function DocumentSummarizer() {
     conferencesMatched: 0,
   })
 
+  // Function to refresh citations when switching to citations tab
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab)
+    
+    // If switching to citations tab, refresh the data
+    if (newTab === "citations" && uploadedDocuments.length > 0) {
+      // Trigger a re-render of the citation tracker by updating the documents
+      setUploadedDocuments(prev => [...prev])
+    }
+  }
+
   const handleDocumentUpload = async (files: File[]) => {
     setIsProcessing(true)
 
@@ -187,7 +198,7 @@ export default function DocumentSummarizer() {
       </header>
 
       <div className="container mx-auto px-4 py-12">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-6 mb-12 p-2 bg-card/50 backdrop-blur-sm border border-border/50 hover-lift">
             <TabsTrigger
               value="upload"
