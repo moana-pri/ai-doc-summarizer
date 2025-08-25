@@ -140,6 +140,7 @@ class GeminiService:
             
             # More comprehensive patterns for academic citations
             patterns = [
+                
                 (r'\(([A-Za-z\s]+),\s*(\d{4})\)', 'Author, Year'),  # (Author, Year)
                 (r'([A-Za-z\s]+)et al\.\s*\((\d{4})\)', 'Author et al., Year'),  # Author et al. (Year)
                 (r'([A-Za-z\s]+)\s*\((\d{4})\)', 'Author, Year'),  # Author (Year)
