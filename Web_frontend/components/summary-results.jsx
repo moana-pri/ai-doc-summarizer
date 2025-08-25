@@ -47,7 +47,7 @@ export function SummaryResults({ documents }) {
                 <CardDescription className="flex items-center gap-4 mt-2 text-slate-400">
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    Processed {doc.uploadedAt.toLocaleDateString()}
+                    Processed {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Unknown date'}
                   </span>
                   <Badge variant="outline" className="border-slate-600 text-slate-300">
                     {(doc.size / 1024 / 1024).toFixed(2)} MB
@@ -78,7 +78,11 @@ export function SummaryResults({ documents }) {
             <div className="space-y-4">
               <div>
                 <h4 className="font-medium mb-2 text-slate-200">Executive Summary</h4>
-                <p className="text-slate-300 leading-relaxed">{doc.summary}</p>
+                <p className="text-slate-300 leading-relaxed">
+                  {doc.summaries && doc.summaries.length > 0 
+                    ? doc.summaries[0].content 
+                    : "No summary available for this document."}
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-700">
@@ -87,11 +91,11 @@ export function SummaryResults({ documents }) {
                   <div className="text-sm text-slate-400">Citations Tracked</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400">{100 - doc.plagiarismScore}%</div>
+                  <div className="text-2xl font-bold text-green-400">{100 - (doc.plagiarismScore || 0)}%</div>
                   <div className="text-sm text-slate-400">Originality Score</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-400">{doc.conferences?.length || 0}</div>
+                  <div className="text-2xl font-bold text-purple-400">{doc.conference_suggestions?.length || 0}</div>
                   <div className="text-sm text-slate-400">Relevant Conferences</div>
                 </div>
               </div>

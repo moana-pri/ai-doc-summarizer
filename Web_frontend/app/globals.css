@@ -134,6 +134,10 @@
     background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 50%, oklch(0.4 0.15 220) 100%);
   }
 
+  .peacock-green-header {
+    background: linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #134e4a 100%);
+  }
+
   .glass-effect {
     backdrop-filter: blur(10px);
     background: rgba(255, 255, 255, 0.05);

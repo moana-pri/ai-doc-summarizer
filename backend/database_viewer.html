@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .document-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .document-item h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .document-meta {
+            color: #666;
+            font-size: 14px;
+        }
+        .summary-item, .citation-item, .plagiarism-item, .conference-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #007bff;
+            border-radius: 3px;
+        }
+        .loading {
+            color: orange;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗄️ Database Viewer</h1>
+    <p>View all data stored in your Django backend database</p>
+    
+    <div class="section">
+        <h2>📊 Analytics Overview</h2>
+        <button onclick="loadAnalytics()">Load Analytics</button>
+        <div id="analytics-content"></div>
+    </div>
+
+    <div class="section">
+        <h2>📄 Documents</h2>
+        <button onclick="loadDocuments()">Load Documents</button>
+        <div id="documents-content"></div>
+    </div>
+
+    <div class="section">
+        <h2>📝 Summaries</h2>
+        <button onclick="loadSummaries()">Load Summaries</button>
+        <div id="summaries-content"></div>
+    </div>
+
+    <div class="section">
+        <h2>🔍 Plagiarism Checks</h2>
+        <button onclick="loadPlagiarism()">Load Plagiarism Checks</button>
+        <div id="plagiarism-content"></div>
+    </div>
+
+    <div class="section">
+        <h2>🎯 Conference Suggestions</h2>
+        <button onclick="loadConferences()">Load Conference Suggestions</button>
+        <div id="conferences-content"></div>
+    </div>
+
+    <div class="section">
+        <h2>📚 Citations</h2>
+        <button onclick="loadCitations()">Load Citations</button>
+        <div id="citations-content"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
+
+        async function loadAnalytics() {
+            const content = document.getElementById('analytics-content');
+            content.innerHTML = '<span class="loading">Loading analytics...</span>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/analytics/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const statsHtml = `
+                        <div class="stats">
+                            <div class="stat-card">
+                                <div class="stat-number">${data.total_documents}</div>
+                                <div class="stat-label">Total Documents</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${data.success_rate}%</div>
+                                <div class="stat-label">Success Rate</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${data.plagiarism_detected}</div>
+                                <div class="stat-label">Plagiarism Checks</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${data.conferences_matched}</div>
+                                <div class="stat-label">Conference Matches</div>
+                            </div>
+                        </div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    content.innerHTML = statsHtml;
+                } else {
+                    content.innerHTML = `<span class="error">Failed to load analytics: ${response.status}</span>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function loadDocuments() {
+            const content = document.getElementById('documents-content');
+            content.innerHTML = '<span class="loading">Loading documents...</span>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let html = `<h3>Found ${data.length} documents:</h3>`;
+                    data.forEach(doc => {
+                        html += `
+                            <div class="document-item">
+                                <h3>${doc.name}</h3>
+                                <div class="document-meta">
+                                    <strong>ID:</strong> ${doc.id}<br>
+                                    <strong>Type:</strong> ${doc.file_type}<br>
+                                    <strong>Size:</strong> ${(doc.size / 1024).toFixed(2)} KB<br>
+                                    <strong>Uploaded:</strong> ${new Date(doc.uploaded_at).toLocaleString()}<br>
+                                    <strong>Processed:</strong> ${doc.processed ? 'Yes' : 'No'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = `<span class="error">Failed to load documents: ${response.status}</span>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function loadSummaries() {
+            const content = document.getElementById('summaries-content');
+            content.innerHTML = '<span class="loading">Loading summaries...</span>';
+            
+            try {
+                // Get documents first, then their summaries
+                const docsResponse = await fetch(`${API_BASE_URL}/documents/`);
+                const documents = await docsResponse.json();
+                
+                if (docsResponse.ok) {
+                    let html = '<h3>Document Summaries:</h3>';
+                    for (const doc of documents) {
+                        try {
+                            const summaryResponse = await fetch(`${API_BASE_URL}/documents/${doc.id}/summary/`);
+                            if (summaryResponse.ok) {
+                                const summary = await summaryResponse.json();
+                                html += `
+                                    <div class="summary-item">
+                                        <h4>${doc.name}</h4>
+                                        <p><strong>Content:</strong> ${summary.content}</p>
+                                        <p><strong>Word Count:</strong> ${summary.word_count}</p>
+                                        <p><strong>Generated:</strong> ${new Date(summary.generated_at).toLocaleString()}</p>
+                                    </div>
+                                `;
+                            }
+                        } catch (e) {
+                            html += `<div class="summary-item"><h4>${doc.name}</h4><p class="error">No summary available</p></div>`;
+                        }
+                    }
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = `<span class="error">Failed to load documents: ${docsResponse.status}</span>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function loadPlagiarism() {
+            const content = document.getElementById('plagiarism-content');
+            content.innerHTML = '<span class="loading">Loading plagiarism checks...</span>';
+            
+            try {
+                const docsResponse = await fetch(`${API_BASE_URL}/documents/`);
+                const documents = await docsResponse.json();
+                
+                if (docsResponse.ok) {
+                    let html = '<h3>Plagiarism Checks:</h3>';
+                    for (const doc of documents) {
+                        try {
+                            const plagiarismResponse = await fetch(`${API_BASE_URL}/documents/${doc.id}/plagiarism/`);
+                            if (plagiarismResponse.ok) {
+                                const plagiarism = await plagiarismResponse.json();
+                                plagiarism.forEach(check => {
+                                    html += `
+                                        <div class="plagiarism-item">
+                                            <h4>${doc.name}</h4>
+                                            <p><strong>Similarity:</strong> ${check.similarity_percentage}%</p>
+                                            <p><strong>Status:</strong> ${check.status}</p>
+                                            <p><strong>Checked:</strong> ${new Date(check.checked_at).toLocaleString()}</p>
+                                        </div>
+                                    `;
+                                });
+                            }
+                        } catch (e) {
+                            html += `<div class="plagiarism-item"><h4>${doc.name}</h4><p class="error">No plagiarism check available</p></div>`;
+                        }
+                    }
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = `<span class="error">Failed to load documents: ${docsResponse.status}</span>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function loadConferences() {
+            const content = document.getElementById('conferences-content');
+            content.innerHTML = '<span class="loading">Loading conference suggestions...</span>';
+            
+            try {
+                const docsResponse = await fetch(`${API_BASE_URL}/documents/`);
+                const documents = await docsResponse.json();
+                
+                if (docsResponse.ok) {
+                    let html = '<h3>Conference Suggestions:</h3>';
+                    for (const doc of documents) {
+                        try {
+                            const conferenceResponse = await fetch(`${API_BASE_URL}/documents/${doc.id}/conferences/`);
+                            if (conferenceResponse.ok) {
+                                const conferences = await conferenceResponse.json();
+                                conferences.forEach(conf => {
+                                    html += `
+                                        <div class="conference-item">
+                                            <h4>${doc.name}</h4>
+                                            <p><strong>Conference:</strong> ${conf.conference_name}</p>
+                                            <p><strong>Confidence:</strong> ${(conf.confidence_score * 100).toFixed(1)}%</p>
+                                            <p><strong>Reasoning:</strong> ${conf.reasoning}</p>
+                                            <p><strong>Suggested:</strong> ${new Date(conf.suggested_at).toLocaleString()}</p>
+                                        </div>
+                                    `;
+                                });
+                            }
+                        } catch (e) {
+                            html += `<div class="conference-item"><h4>${doc.name}</h4><p class="error">No conference suggestions available</p></div>`;
+                        }
+                    }
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = `<span class="error">Failed to load documents: ${docsResponse.status}</span>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function loadCitations() {
+            const content = document.getElementById('citations-content');
+            content.innerHTML = '<span class="loading">Loading citations...</span>';
+            
+            try {
+                const docsResponse = await fetch(`${API_BASE_URL}/documents/`);
+                const documents = await docsResponse.json();
+                
+                if (docsResponse.ok) {
+                    let html = '<h3>Citations:</h3>';
+                    for (const doc of documents) {
+                        try {
+                            const citationResponse = await fetch(`${API_BASE_URL}/documents/${doc.id}/citations/`);
+                            if (citationResponse.ok) {
+                                const citations = await citationResponse.json();
+                                if (citations.length > 0) {
+                                    citations.forEach(citation => {
+                                        html += `
+                                            <div class="citation-item">
+                                                <h4>${doc.name}</h4>
+                                                <p><strong>Text:</strong> ${citation.text}</p>
+                                                <p><strong>Source:</strong> ${citation.source}</p>
+                                                <p><strong>Confidence:</strong> ${(citation.confidence * 100).toFixed(1)}%</p>
+                                                <p><strong>Detected:</strong> ${new Date(citation.detected_at).toLocaleString()}</p>
+                                            </div>
+                                        `;
+                                    });
+                                } else {
+                                    html += `<div class="citation-item"><h4>${doc.name}</h4><p>No citations found</p></div>`;
+                                }
+                            }
+                        } catch (e) {
+                            html += `<div class="citation-item"><h4>${doc.name}</h4><p class="error">No citations available</p></div>`;
+                        }
+                    }
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = `<span class="error">Failed to load documents: ${docsResponse.status}</span>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        // Auto-load analytics on page load
+        window.onload = function() {
+            loadAnalytics();
+        };
+    </script>
+</body>
+</html>

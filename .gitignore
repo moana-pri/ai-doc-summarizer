@@ -208,4 +208,7 @@ __marimo__/
 
 
 /Web_frontend/node_modules/
-
+/backend/media/documents/
+/backend/env_example.txt
+/backend/env.txt
+/backend/.env

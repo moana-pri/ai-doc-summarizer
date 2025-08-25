@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: orange; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔗 Backend Connection Test</h1>
+    
+    <div class="test-section">
+        <h2>Health Check</h2>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Documents List</h2>
+        <button onclick="testDocuments()">Get Documents</button>
+        <div id="documents-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Analytics</h2>
+        <button onclick="testAnalytics()">Get Analytics</button>
+        <div id="analytics-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>File Upload Test</h2>
+        <input type="file" id="fileInput" accept=".txt,.pdf,.docx">
+        <button onclick="testUpload()">Upload File</button>
+        <div id="upload-result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<span class="loading">Testing...</span>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/health/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ Health check passed!</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="error">❌ Health check failed: ${response.status}</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="error">❌ Connection error: ${error.message}</span>
+                `;
+            }
+        }
+
+        async function testDocuments() {
+            const resultDiv = document.getElementById('documents-result');
+            resultDiv.innerHTML = '<span class="loading">Loading documents...</span>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ Found ${data.length} documents!</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="error">❌ Failed to get documents: ${response.status}</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="error">❌ Connection error: ${error.message}</span>
+                `;
+            }
+        }
+
+        async function testAnalytics() {
+            const resultDiv = document.getElementById('analytics-result');
+            resultDiv.innerHTML = '<span class="loading">Loading analytics...</span>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/analytics/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ Analytics loaded!</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="error">❌ Failed to get analytics: ${response.status}</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="error">❌ Connection error: ${error.message}</span>
+                `;
+            }
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('upload-result');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = '<span class="error">❌ Please select a file first</span>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<span class="loading">Uploading...</span>';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+
+                const response = await fetch(`${API_BASE_URL}/documents/upload/`, {
+                    method: 'POST',
+                    body: formData,
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ File uploaded successfully!</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="error">❌ Upload failed: ${response.status}</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="error">❌ Upload error: ${error.message}</span>
+                `;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            testHealth();
+        };
+    </script>
+</body>
+</html>

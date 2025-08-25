@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Upload, FileText, X, Sparkles, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+
 export function DocumentUpload({ onUpload, isProcessing }) {
   const [selectedFiles, setSelectedFiles] = useState([])
 

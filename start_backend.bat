@@ -1,0 +1,13 @@
+@echo off
+echo Starting Django Backend Server...
+echo.
+cd backend
+echo Installing dependencies...
+pip install -r requirements.txt
+echo.
+echo Running migrations...
+python manage.py migrate
+echo.
+echo Starting server...
+python manage.py runserver
+pause

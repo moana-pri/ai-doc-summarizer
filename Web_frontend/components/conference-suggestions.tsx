@@ -5,8 +5,29 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Users, Calendar, ExternalLink, Star, Clock } from "lucide-react"
 
+interface ConferenceSuggestion {
+  conference_name: string;
+  confidence_score: number;
+  reasoning: string;
+}
+
+interface Document {
+  id: string;
+  name: string;
+  conference_suggestions?: ConferenceSuggestion[];
+}
+
 interface ConferenceSuggestionsProps {
-  documents: any[]
+  documents: Document[]
+}
+
+interface ProcessedConference {
+  name: string;
+  relevance: number;
+  deadline: string;
+  documentName: string;
+  documentId: string;
+  reasoning: string;
 }
 
 export function ConferenceSuggestions({ documents }: ConferenceSuggestionsProps) {
@@ -22,24 +43,27 @@ export function ConferenceSuggestions({ documents }: ConferenceSuggestionsProps)
     )
   }
 
-  const allConferences = documents.flatMap((doc) =>
-    (doc.conferences || []).map((conf) => ({
-      ...conf,
+  const allConferences: ProcessedConference[] = documents.flatMap((doc) =>
+    (doc.conference_suggestions || []).map((conf: ConferenceSuggestion) => ({
+      name: conf.conference_name,
+      relevance: conf.confidence_score,
+      deadline: new Date(Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(), // Random deadline
       documentName: doc.name,
       documentId: doc.id,
+      reasoning: conf.reasoning,
     })),
   )
 
   // Remove duplicates and sort by relevance
   const uniqueConferences = allConferences
-    .reduce((acc, conf) => {
-      const existing = acc.find((c) => c.name === conf.name)
+    .reduce((acc: ProcessedConference[], conf: ProcessedConference) => {
+      const existing = acc.find((c: ProcessedConference) => c.name === conf.name)
       if (!existing || existing.relevance < conf.relevance) {
-        return [...acc.filter((c) => c.name !== conf.name), conf]
+        return [...acc.filter((c: ProcessedConference) => c.name !== conf.name), conf]
       }
       return acc
-    }, [] as any[])
-    .sort((a, b) => b.relevance - a.relevance)
+    }, [] as ProcessedConference[])
+    .sort((a: ProcessedConference, b: ProcessedConference) => b.relevance - a.relevance)
 
   const getRelevanceColor = (relevance: number) => {
     if (relevance > 0.9) return "text-green-600"
@@ -66,7 +90,7 @@ export function ConferenceSuggestions({ documents }: ConferenceSuggestionsProps)
       </div>
 
       <div className="grid gap-4">
-        {uniqueConferences.map((conference, index) => (
+        {uniqueConferences.map((conference: ProcessedConference, index: number) => (
           <Card key={`${conference.name}-${index}`}>
             <CardHeader>
               <div className="flex items-start justify-between">

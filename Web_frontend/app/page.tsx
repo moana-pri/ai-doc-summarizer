@@ -69,7 +69,16 @@ export default function DocumentSummarizer() {
 
       // Update analytics
       const analytics = await apiService.getAnalytics()
-      setAnalyticsData(analytics)
+      setAnalyticsData({
+        totalDocuments: analytics.total_documents || 0,
+        totalProcessingTime: analytics.total_processing_time || 0,
+        averageAccuracy: analytics.average_accuracy || 0,
+        successRate: analytics.success_rate || 100,
+        documentsToday: analytics.documents_today || 0,
+        citationsFound: analytics.citations_found || 0,
+        plagiarismDetected: analytics.plagiarism_detected || 0,
+        conferencesMatched: analytics.conferences_matched || 0,
+      })
 
       setIsProcessing(false)
       setActiveTab("results")
@@ -80,6 +89,33 @@ export default function DocumentSummarizer() {
     }
   }
 
+    const handleExportResults = async () => {
+    try {
+      if (uploadedDocuments.length === 0) {
+        alert('No documents to export')
+        return
+      }
+
+      // Export the first document (you can modify this to export all)
+      const uploadedDoc = uploadedDocuments[0]
+      const blob = await apiService.exportDocument(uploadedDoc.id)
+
+      // Create download link for PDF
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `document_report_${uploadedDoc.name.replace('.', '_')}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+    } catch (error) {
+      console.error('Error exporting PDF:', error)
+      alert('Failed to export PDF report')
+    }
+  }
+
   // Mock data generation functions removed - now using real API data
 
   // Load analytics data on component mount
@@ -87,7 +123,16 @@ export default function DocumentSummarizer() {
     const loadAnalytics = async () => {
       try {
         const analytics = await apiService.getAnalytics()
-        setAnalyticsData(analytics)
+        setAnalyticsData({
+          totalDocuments: analytics.total_documents || 0,
+          totalProcessingTime: analytics.total_processing_time || 0,
+          averageAccuracy: analytics.average_accuracy || 0,
+          successRate: analytics.success_rate || 100,
+          documentsToday: analytics.documents_today || 0,
+          citationsFound: analytics.citations_found || 0,
+          plagiarismDetected: analytics.plagiarism_detected || 0,
+          conferencesMatched: analytics.conferences_matched || 0,
+        })
       } catch (error) {
         console.error('Error loading analytics:', error)
       }
@@ -99,8 +144,8 @@ export default function DocumentSummarizer() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-muted">
       <header className="relative overflow-hidden">
-        <div className="absolute inset-0 gradient-bg opacity-95"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-transparent to-accent/30"></div>
+        <div className="absolute inset-0 peacock-green-header opacity-95"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-teal-400/30 via-transparent to-teal-500/30"></div>
         <div className="relative container mx-auto px-4 py-12">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -132,6 +177,7 @@ export default function DocumentSummarizer() {
               variant="secondary"
               size="lg"
               className="hover-lift pulse-on-hover bg-white/10 text-white border-white/20 hover:bg-white/20"
+              onClick={handleExportResults}
             >
               <Download className="w-5 h-5 mr-2" />
               Export Results
@@ -243,7 +289,7 @@ export default function DocumentSummarizer() {
                           <div>
                             <p className="font-semibold">{doc.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              {(doc.size / 1024 / 1024).toFixed(2)} MB • Uploaded {doc.uploadedAt.toLocaleDateString()}
+                              {(doc.size / 1024 / 1024).toFixed(2)} MB • Uploaded {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Unknown date'}
                             </p>
                           </div>
                         </div>

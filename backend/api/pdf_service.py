@@ -1,0 +1,424 @@
+#!/usr/bin/env python3
+"""
+PDF Report Service for generating document analysis reports
+"""
+
+from io import BytesIO
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+from django.utils import timezone
+import json
+
+
+class PDFReportService:
+    """Service for generating PDF reports"""
+    
+    def __init__(self):
+        self.styles = getSampleStyleSheet()
+        self._setup_custom_styles()
+    
+    def _setup_custom_styles(self):
+        """Setup custom paragraph styles"""
+        # Title style
+        self.title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=self.styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            alignment=TA_CENTER,
+            textColor=colors.darkblue
+        )
+        
+        # Section header style
+        self.section_style = ParagraphStyle(
+            'CustomSection',
+            parent=self.styles['Heading2'],
+            fontSize=16,
+            spaceAfter=12,
+            spaceBefore=20,
+            textColor=colors.darkblue
+        )
+        
+        # Normal text style
+        self.normal_style = ParagraphStyle(
+            'CustomNormal',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            spaceAfter=6,
+            alignment=TA_JUSTIFY
+        )
+        
+        # Code style for technical content
+        self.code_style = ParagraphStyle(
+            'CustomCode',
+            parent=self.styles['Code'],
+            fontSize=9,
+            spaceAfter=6,
+            fontName='Courier',
+            leftIndent=20,
+            rightIndent=20,
+            backColor=colors.lightgrey
+        )
+    
+    def generate_document_report(self, document, summaries, citations, plagiarism_checks, conference_suggestions):
+        """Generate a comprehensive PDF report for a document"""
+        
+        # Create PDF buffer
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+        
+        # Build story (content)
+        story = []
+        
+        # Title page
+        story.extend(self._create_title_page(document))
+        story.append(PageBreak())
+        
+        # Executive summary
+        story.extend(self._create_executive_summary(document, summaries, citations, plagiarism_checks, conference_suggestions))
+        story.append(PageBreak())
+        
+        # Document details
+        story.extend(self._create_document_details(document))
+        story.append(Spacer(1, 20))
+        
+        # Summaries section
+        if summaries:
+            story.extend(self._create_summaries_section(summaries))
+            story.append(Spacer(1, 20))
+        
+        # Citations section
+        if citations:
+            story.extend(self._create_citations_section(citations))
+            story.append(Spacer(1, 20))
+        
+        # Plagiarism analysis section
+        if plagiarism_checks:
+            story.extend(self._create_plagiarism_section(plagiarism_checks))
+            story.append(Spacer(1, 20))
+        
+        # Conference suggestions section
+        if conference_suggestions:
+            story.extend(self._create_conference_section(conference_suggestions))
+            story.append(Spacer(1, 20))
+        
+        # Build PDF
+        doc.build(story)
+        
+        # Get PDF content
+        pdf_content = buffer.getvalue()
+        buffer.close()
+        
+        return pdf_content
+    
+    def _create_title_page(self, document):
+        """Create the title page"""
+        story = []
+        
+        # Main title
+        title = Paragraph("Document Analysis Report", self.title_style)
+        story.append(title)
+        story.append(Spacer(1, 40))
+        
+        # Document info
+        doc_info = [
+            ["Document Name:", document.name],
+            ["File Type:", document.file_type.upper()],
+            ["File Size:", f"{document.size / 1024:.1f} KB"],
+            ["Upload Date:", document.uploaded_at.strftime("%B %d, %Y at %I:%M %p")],
+            ["Analysis Date:", timezone.now().strftime("%B %d, %Y at %I:%M %p")],
+        ]
+        
+        doc_table = Table(doc_info, colWidths=[2*inch, 4*inch])
+        doc_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ]))
+        
+        story.append(doc_table)
+        story.append(Spacer(1, 40))
+        
+        # Generated by info
+        generated_by = Paragraph(
+            f"Generated by DocuMind AI<br/>"
+            f"Intelligent Document Analysis & Summarization System",
+            ParagraphStyle(
+                'GeneratedBy',
+                parent=self.styles['Normal'],
+                fontSize=10,
+                alignment=TA_CENTER,
+                textColor=colors.grey
+            )
+        )
+        story.append(generated_by)
+        
+        return story
+    
+    def _create_executive_summary(self, document, summaries, citations, plagiarism_checks, conference_suggestions):
+        """Create executive summary section"""
+        story = []
+        
+        # Section title
+        title = Paragraph("Executive Summary", self.section_style)
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        # Summary statistics
+        stats_data = [
+            ["Metric", "Value"],
+            ["Document Name", document.name],
+            ["Total Summaries", str(len(summaries))],
+            ["Citations Detected", str(len(citations))],
+            ["Plagiarism Checks", str(len(plagiarism_checks))],
+            ["Conference Suggestions", str(len(conference_suggestions))],
+        ]
+        
+        # Add plagiarism score if available
+        if plagiarism_checks:
+            avg_plagiarism = sum(check.similarity_percentage for check in plagiarism_checks) / len(plagiarism_checks)
+            stats_data.append(["Average Plagiarism Score", f"{avg_plagiarism:.1f}%"])
+        
+        # Add conference confidence if available
+        if conference_suggestions:
+            avg_confidence = sum(suggestion.confidence_score for suggestion in conference_suggestions) / len(conference_suggestions)
+            stats_data.append(["Average Conference Confidence", f"{avg_confidence:.1%}"])
+        
+        stats_table = Table(stats_data, colWidths=[2.5*inch, 3.5*inch])
+        stats_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ]))
+        
+        story.append(stats_table)
+        story.append(Spacer(1, 20))
+        
+        # Key findings
+        findings = []
+        if summaries:
+            findings.append("• AI-generated summaries provide concise document overview")
+        if citations:
+            findings.append("• Multiple citations detected and analyzed for accuracy")
+        if plagiarism_checks:
+            findings.append("• Plagiarism analysis completed with similarity scoring")
+        if conference_suggestions:
+            findings.append("• Conference recommendations provided based on content analysis")
+        
+        if findings:
+            findings_text = "<br/>".join(findings)
+            findings_para = Paragraph(f"<b>Key Findings:</b><br/>{findings_text}", self.normal_style)
+            story.append(findings_para)
+        
+        return story
+    
+    def _create_document_details(self, document):
+        """Create document details section"""
+        story = []
+        
+        title = Paragraph("Document Information", self.section_style)
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        details = [
+            ["Property", "Value"],
+            ["Document ID", str(document.id)],
+            ["File Name", document.name],
+            ["File Type", document.file_type.upper()],
+            ["File Size", f"{document.size / 1024:.1f} KB"],
+            ["Upload Date", document.uploaded_at.strftime("%B %d, %Y at %I:%M %p")],
+            ["Processing Status", "Completed" if document.processed else "Pending"],
+        ]
+        
+        details_table = Table(details, colWidths=[2*inch, 4*inch])
+        details_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ]))
+        
+        story.append(details_table)
+        return story
+    
+    def _create_summaries_section(self, summaries):
+        """Create summaries section"""
+        story = []
+        
+        title = Paragraph("Document Summaries", self.section_style)
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        for i, summary in enumerate(summaries, 1):
+            # Summary header
+            summary_header = Paragraph(
+                f"<b>Summary {i}</b> (Generated: {summary.generated_at.strftime('%B %d, %Y at %I:%M %p')})",
+                self.normal_style
+            )
+            story.append(summary_header)
+            story.append(Spacer(1, 6))
+            
+            # Summary content
+            content = summary.content[:1000] + "..." if len(summary.content) > 1000 else summary.content
+            summary_content = Paragraph(content, self.normal_style)
+            story.append(summary_content)
+            story.append(Spacer(1, 12))
+            
+            # Word count
+            word_count = Paragraph(f"<i>Word Count: {summary.word_count}</i>", self.normal_style)
+            story.append(word_count)
+            story.append(Spacer(1, 20))
+        
+        return story
+    
+    def _create_citations_section(self, citations):
+        """Create citations section"""
+        story = []
+        
+        title = Paragraph("Detected Citations", self.section_style)
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        # Citations table
+        citations_data = [["Citation Text", "Source", "Confidence"]]
+        for citation in citations:
+            text = citation.text[:50] + "..." if len(citation.text) > 50 else citation.text
+            citations_data.append([
+                text,
+                citation.source,
+                f"{citation.confidence:.1%}"
+            ])
+        
+        citations_table = Table(citations_data, colWidths=[3*inch, 2*inch, 1*inch])
+        citations_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ]))
+        
+        story.append(citations_table)
+        story.append(Spacer(1, 12))
+        
+        # Summary stats
+        total_citations = len(citations)
+        avg_confidence = sum(citation.confidence for citation in citations) / total_citations if citations else 0
+        
+        stats_text = f"<b>Citation Analysis:</b> {total_citations} citations detected with average confidence of {avg_confidence:.1%}"
+        stats_para = Paragraph(stats_text, self.normal_style)
+        story.append(stats_para)
+        
+        return story
+    
+    def _create_plagiarism_section(self, plagiarism_checks):
+        """Create plagiarism analysis section"""
+        story = []
+        
+        title = Paragraph("Plagiarism Analysis", self.section_style)
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        # Plagiarism table
+        plagiarism_data = [["Check ID", "Similarity %", "Status", "Matched Sources"]]
+        for check in plagiarism_checks:
+            matched_count = len(check.matched_sources) if check.matched_sources else 0
+            plagiarism_data.append([
+                str(check.id),
+                f"{check.similarity_percentage:.1f}%",
+                check.status,
+                str(matched_count)
+            ])
+        
+        plagiarism_table = Table(plagiarism_data, colWidths=[1*inch, 1.5*inch, 1.5*inch, 2*inch])
+        plagiarism_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightcoral),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ]))
+        
+        story.append(plagiarism_table)
+        story.append(Spacer(1, 12))
+        
+        # Summary stats
+        total_checks = len(plagiarism_checks)
+        avg_similarity = sum(check.similarity_percentage for check in plagiarism_checks) / total_checks if plagiarism_checks else 0
+        
+        # Risk assessment
+        if avg_similarity < 10:
+            risk_level = "Low"
+            risk_color = colors.green
+        elif avg_similarity < 25:
+            risk_level = "Medium"
+            risk_color = colors.orange
+        else:
+            risk_level = "High"
+            risk_color = colors.red
+        
+        stats_text = f"<b>Plagiarism Assessment:</b> {total_checks} checks performed. Average similarity: {avg_similarity:.1f}% (Risk Level: {risk_level})"
+        stats_para = Paragraph(stats_text, self.normal_style)
+        story.append(stats_para)
+        
+        return story
+    
+    def _create_conference_section(self, conference_suggestions):
+        """Create conference suggestions section"""
+        story = []
+        
+        title = Paragraph("Conference Recommendations", self.section_style)
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        # Conference table
+        conference_data = [["Conference", "Confidence", "Reasoning"]]
+        for suggestion in conference_suggestions:
+            reasoning = suggestion.reasoning[:60] + "..." if len(suggestion.reasoning) > 60 else suggestion.reasoning
+            conference_data.append([
+                suggestion.conference_name,
+                f"{suggestion.confidence_score:.1%}",
+                reasoning
+            ])
+        
+        conference_table = Table(conference_data, colWidths=[2.5*inch, 1*inch, 2.5*inch])
+        conference_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ]))
+        
+        story.append(conference_table)
+        story.append(Spacer(1, 12))
+        
+        # Summary stats
+        total_suggestions = len(conference_suggestions)
+        avg_confidence = sum(suggestion.confidence_score for suggestion in conference_suggestions) / total_suggestions if conference_suggestions else 0
+        
+        stats_text = f"<b>Conference Analysis:</b> {total_suggestions} conferences suggested with average confidence of {avg_confidence:.1%}"
+        stats_para = Paragraph(stats_text, self.normal_style)
+        story.append(stats_para)
+        
+        return story

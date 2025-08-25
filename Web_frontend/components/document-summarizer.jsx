@@ -206,7 +206,7 @@ export default function DocumentSummarizer() {
                           <div>
                             <p className="font-semibold text-slate-200">{doc.name}</p>
                             <p className="text-sm text-slate-400">
-                              {(doc.size / 1024 / 1024).toFixed(2)} MB • Uploaded {doc.uploadedAt.toLocaleDateString()}
+                              {(doc.size / 1024 / 1024).toFixed(2)} MB • Uploaded {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Unknown date'}
                             </p>
                           </div>
                         </div>
