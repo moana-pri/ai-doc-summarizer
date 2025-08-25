@@ -154,7 +154,7 @@ export default function DocumentSummarizer() {
                   <Brain className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-5xl font-bold text-white mb-2">DocuMind AI</h1>
+                  <h1 className="text-5xl font-bold text-white mb-2">Summetrix AI</h1>
                   <p className="text-white/90 text-lg">Intelligent Document Analysis & Summarization</p>
                 </div>
               </div>
