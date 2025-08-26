@@ -151,7 +151,7 @@ This project is for educational and research purposes.
 
 | Landing Page | Conference Suggestions | Analytics Dashboard |
 |:------------:|:---------------------:|:-------------------:|
-| ![Landing Page](public/Landing_page.jpg) | ![Conference Page](public/Conference_Page.jpg) | ![Analytics Page](public/Analytics_Page.jpgAnalytics_Page.jpg) |
+| ![Landing Page](public/Landing_page.jpg) | ![Conference Page](public/Conference_Page.jpg) | ![Analytics Page](public/Analytics_Page.jpg) |
 
 | Summary Page | Plagiarism Detection |
 |:------------:|:-------------------:|
