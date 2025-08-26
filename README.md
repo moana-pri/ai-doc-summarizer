@@ -155,6 +155,6 @@ This project is for educational and research purposes.
 
 | Summary Page | Plagiarism Detection |
 |:------------:|:-------------------:|
-| ![Summary Page](Web_frontend/public/Summary_page.jpg) | ![Plagiarism Page](public\Plagiarism_page.jpg) |
+| ![Summary Page](public/Summary_page.jpg) | ![Plagiarism Page](public/Plagiarism_page.jpg) |
 
 > **Note:** All screenshots are from the actual running application and demonstrate the main features and UI.
