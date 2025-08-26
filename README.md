@@ -151,10 +151,10 @@ This project is for educational and research purposes.
 
 | Landing Page | Conference Suggestions | Analytics Dashboard |
 |:------------:|:---------------------:|:-------------------:|
-| ![Landing Page](Web_frontend/public/Landing_Page.jpg) | ![Conference Page](Web_frontend/public/Conference.jpg) | ![Analytics Page](Web_frontend/public/Analytics_Page.jpg) |
+| ![Landing Page](public/Landing_page.jpg) | ![Conference Page](public/Conference_Page.jpg) | ![Analytics Page](public\Analytics_Page.jpg) |
 
 | Summary Page | Plagiarism Detection |
 |:------------:|:-------------------:|
-| ![Summary Page](Web_frontend/public/Summary_Page.jpg) | ![Plagiarism Page](Web_frontend/public/Plagiarism_Page.jpg) |
+| ![Summary Page](Web_frontend/public/Summary_page.jpg) | ![Plagiarism Page](public\Plagiarism_page.jpg) |
 
 > **Note:** All screenshots are from the actual running application and demonstrate the main features and UI.
